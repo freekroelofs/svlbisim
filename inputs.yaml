@@ -1,0 +1,83 @@
+##########################################
+# Parameters to set for svlbi simulation
+##########################################
+
+# Output directory
+outdir: '/path/to/output/directory'
+
+# Output uvfits basename
+outtag: '3C279_22GHz_obs'
+
+##########################################
+# Source parameters
+##########################################
+
+# Path to fits image
+image_path: '/path/to/model/image'
+
+# Source name
+source: '3C279'
+
+# Right Ascension
+ra: '12 h 56 m 11.1 s'
+
+# Declination
+dec: '05 deg 47 m 22 s'
+
+# Observing frequency (Hz)
+nu: 22227937500.
+
+# Field of view (uas; for uv-smearing limit)
+fov: 1000.
+
+##########################################
+# Orbit parameters
+##########################################
+
+# Radius of the inner orbit (km)
+radius1: 13892.
+
+# Distance between inner and outer orbit (km)
+delta_r: 30.
+
+# Number of satellites (pick 2 or 3 for now)
+nsat: 3
+
+# Orbit inclination (deg)
+inclination: 5
+
+# Orbit position angle (deg)
+positionangle: 90
+
+# Start time of observations (days); 0 means start at closest approach
+tstart: 0
+
+# Stop time of observations (days)
+tstop: 30
+
+#####################################
+# System noise parameters
+#####################################
+
+# System temperature (K)
+tsys: 100
+
+# Dish diameter (m)
+diameter: 1.0
+
+# Observing bandwidth (GHz)
+bw: 2
+
+# Aperture efficiency
+eta: 0.8
+
+#####################################
+# Optional steps
+#####################################
+
+# Set to 'True' to output some generally useful plots
+make_plots: 'True'
+
+# Set to 'True' to run a basic image reconstruction with ehtim
+make_image: 'True'
+
