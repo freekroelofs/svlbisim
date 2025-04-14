@@ -75,6 +75,12 @@ eta: 0.8
 # Optional steps
 #####################################
 
+# Set to 'True' to create an additional uvfits with gridded visibilities
+grid_uv: 'True'
+
+# Number of uv grid cells
+ncells: 64
+
 # Set to 'True' to output some generally useful plots
 make_plots: 'True'
 
