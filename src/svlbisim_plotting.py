@@ -90,6 +90,30 @@ def plot_uv_snrthreshold(obs, out, fs=15, s=3, threshold=3):
         
     return 0
 
+def plot_uv_snr_grid(obs, out, ncells, fs=15, s=3):
+    fig, ax = plt.subplots()
+    u = obs.data['u']/1e9
+    v = obs.data['v']/1e9
+    amp = np.abs(obs.data['vis'])
+    sigma = obs.data['sigma']
+    amp_debias = eh.observing.obs_helpers.amp_debias(amp, sigma)
+    snr = amp_debias/sigma
+    
+    scat = ax.scatter(u, v, c=snr, s=s, norm='log')
+    scat2 = ax.scatter(-u, -v, c=snr, s=s, norm='log')
+
+    ax.invert_xaxis()
+    ax.set_aspect('equal')
+    ax.set_xlabel('$u$ (G$\lambda$)', fontsize=fs)
+    ax.set_ylabel('$v$ (G$\lambda$)', fontsize=fs)
+
+    cbar = fig.colorbar(scat)
+    cbar.set_label('S/N')
+    
+    fig.savefig(out + '_uv_snr_grid.pdf', bbox_inches='tight')
+        
+    return 0
+
 
 
 def main(params):
@@ -101,6 +125,10 @@ def main(params):
     plot_uv_amp(obs, out)
     plot_uv_snr(obs, out)
     plot_uv_snrthreshold(obs, out)
+    if params['grid_uv'] == 'True':
+        obsfile_grid = params['outdir'] + '/' + params['outtag'] + '_gridded.uvfits'
+        obs_grid = eh.obsdata.load_uvfits(obsfile_grid)
+        plot_uv_snr_grid(obs_grid, out, int(params['ncells']))
 
     return 0
 

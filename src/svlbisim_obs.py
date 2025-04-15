@@ -14,7 +14,6 @@ def observe(modelfile, uvfile, Tsys, D, eta, bw, out, kb=1.38064852e-23):
     # Calculate system noise
     A = eta * np.pi*(0.5*D)**2 # Antenna effective area
     SEFD = (2*kb*Tsys/A)*1e26
-    print('bw', bw)
     sigma_const = SEFD/(0.88*np.sqrt(2*bw))
 
     # Calculate and add sigmas to observation object
@@ -22,7 +21,6 @@ def observe(modelfile, uvfile, Tsys, D, eta, bw, out, kb=1.38064852e-23):
         tint = uvdata.data['tint'][i]
         sigma = sigma_const/np.sqrt(tint)
         uvdata.data['sigma'][i] = sigma
-        print(SEFD, bw, sigma_const, tint, sigma)
 
     obs = im.observe_same(uvdata, sgrscat=False, ttype='fast')
     obs.save_uvfits(out+'.uvfits')
