@@ -114,6 +114,15 @@ def plot_uv_snr_grid(obs, out, ncells, fs=15, s=3):
         
     return 0
 
+def plot_fft(fftim, out):
+    fftim.display(scale='gamma', label_type='scale', has_title=False, export_pdf=out + '_fft.pdf')
+        
+    return 0
+
+def plot_groundtruth(model, out):
+    model.display(scale='gamma', label_type='scale', has_title=False, export_pdf=out + '_groundtruth.pdf')
+        
+    return 0
 
 
 def main(params):
@@ -129,6 +138,13 @@ def main(params):
         obsfile_grid = params['outdir'] + '/' + params['outtag'] + '_gridded.uvfits'
         obs_grid = eh.obsdata.load_uvfits(obsfile_grid)
         plot_uv_snr_grid(obs_grid, out, int(params['ncells']))
+
+        fftimfile = params['outdir'] + '/' + params['outtag'] + '_fft.fits'
+        fftim = eh.image.load_fits(fftimfile)
+        plot_fft(fftim, out)
+
+        model = eh.image.load_fits(params['image_path'])
+        plot_groundtruth(model, out)
 
     return 0
 
