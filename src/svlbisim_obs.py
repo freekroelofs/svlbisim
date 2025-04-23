@@ -4,9 +4,15 @@ import os
 
 def observe(modelfile, uvfile, Tsys, D, eta, bw, out, kb=1.38064852e-23):
 
-    # Prepare uv data and image
+    # Prepare uv data and image or movie
     uvdata = eh.obsdata.load_uvfits(uvfile)
-    im = eh.image.load_fits(modelfile)
+    
+    if modelfile.split('.')[-1] == 'fits':
+        im = eh.image.load_fits(modelfile)
+    elif modelfile.split('.')[-1] == 'h5' or modelfile.split('.')[-1] == 'hdf5':
+        im = eh.movie.load_hdf5(modelfile)
+    else:
+        raise ValueError('Use a fits or hdf5 file for the input model.')
     im.ra = uvdata.ra
     im.dec= uvdata.dec
     im.rf = uvdata.rf

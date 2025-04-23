@@ -6,8 +6,8 @@ import os
 def calc_positions(radius, inc, pa, times, GM=3.986004418e14):
     omega = np.sqrt(GM / (1000. * radius)) / (1000. * radius)
     positions = np.array([np.cos(times * omega) * radius, np.sin(times * omega) * radius, np.zeros(len(times))])
-    temp = np.array([np.cos(inc) * positions[0] - np.sin(inc) * positions[2], positions[1], np.cos(inc) * positions[2] + np.sin(inc) * positions[0]])
-    positions = np.array([np.cos(pa) * temp[0] - np.sin(pa) * temp[1], np.cos(pa) * temp[1] + np.sin(pa) * temp[0], temp[2]])
+    temp = np.array([positions[0], np.cos(inc) * positions[1] - np.sin(inc) * positions[2], np.cos(inc) * positions[2] + np.sin(inc) * positions[1]])
+    positions = np.array([np.cos(pa) * temp[0] + np.sin(pa) * temp[2], temp[1], np.cos(pa) * temp[2] - np.sin(pa) * temp[0]])
 
     return positions
 
