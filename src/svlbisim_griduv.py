@@ -1,4 +1,5 @@
 import ehtim as eh
+import ehtim.scattering.stochastic_optics as so
 import numpy as np
 import matplotlib.pyplot as plt
 import numpy.lib.recfunctions as rec
@@ -119,6 +120,13 @@ def main(params):
     ncells = int(params['ncells'])
     obs_grid = griduv(obs, out, ncells, fov)
     im_fft = calc_fft(obs, out, ncells)
+
+    # Deblur FFT for SGRA
+    if params['source'] == 'SGRA':
+        sm = so.ScatteringModel()
+        obs_deblur = sm.Deblur_obs(obs)
+        out_deblur = params['outdir'] + '/' + params['outtag'] + '_deblur'
+        im_fft_deblur = calc_fft(obs_deblur, out_deblur, ncells)
 
     return 0
 

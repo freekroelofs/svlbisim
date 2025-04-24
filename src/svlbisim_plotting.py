@@ -151,6 +151,12 @@ def main(params):
         fftim = eh.image.load_fits(fftimfile)
         plot_fft(fftim, out)
 
+        if params['source'] == 'SGRA':
+            fftimfile = params['outdir'] + '/' + params['outtag'] + '_deblur_fft.fits'
+            fftim = eh.image.load_fits(fftimfile)
+            out = params['outdir'] + '/' + params['outtag'] + '_deblur'
+            plot_fft(fftim, out)
+
 
     return 0
 
