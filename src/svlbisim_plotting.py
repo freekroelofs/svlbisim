@@ -124,16 +124,24 @@ def plot_groundtruth(model, out):
         
     return 0
 
-
 def main(params):
     obsfile = params['outdir'] + '/' + params['outtag'] + '.uvfits'
     obs = eh.obsdata.load_uvfits(obsfile)
     out = params['outdir'] + '/' + params['outtag']
+    modelfile = params['image_path']
+    if modelfile.split('.')[-1] == 'fits':
+        modeltype = 'image'
+    elif modelfile.split('.')[-1] == 'h5' or modelfile.split('.')[-1] == 'hdf5':
+        modeltype = 'movie'
     
     plot_uvdist_amp(obs, out)
     plot_uv_amp(obs, out)
     plot_uv_snr(obs, out)
     plot_uv_snrthreshold(obs, out)
+    if modeltype == 'image':
+        model = eh.image.load_fits(params['image_path'])
+        plot_groundtruth(model, out)
+        
     if params['grid_uv'] == 'True':
         obsfile_grid = params['outdir'] + '/' + params['outtag'] + '_gridded.uvfits'
         obs_grid = eh.obsdata.load_uvfits(obsfile_grid)
@@ -143,8 +151,6 @@ def main(params):
         fftim = eh.image.load_fits(fftimfile)
         plot_fft(fftim, out)
 
-        model = eh.image.load_fits(params['image_path'])
-        plot_groundtruth(model, out)
 
     return 0
 
