@@ -150,7 +150,7 @@ def main(params):
     radius1 = params['radius1']
     radius3 = radius1 + params['delta_r']
     if nsat == 3:
-        radius2 = radius1 + (radius3-radius1)/3
+        radius2 = radius1 + (radius3-radius1)/2
     inclination = params['inclination']*np.pi/180 
     positionangle = params['positionangle']*np.pi/180
     timerange = [params['tstart']*3600*24, params['tstop']*3600*24]

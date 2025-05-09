@@ -47,8 +47,8 @@ def plot_uv_snr(obs, out, fs=15, s=3):
     amp_debias = eh.observing.obs_helpers.amp_debias(amp, sigma)
     snr = amp_debias/sigma
     
-    scat = ax.scatter(u, v, c=snr, s=s)
-    scat2 = ax.scatter(-u, -v, c=snr, s=s)
+    scat = ax.scatter(u, v, c=snr, s=s, norm='log')
+    scat2 = ax.scatter(-u, -v, c=snr, s=s, norm='log')
 
     ax.invert_xaxis()
     ax.set_aspect('equal')
@@ -73,8 +73,8 @@ def plot_uv_snrthreshold(obs, out, fs=15, s=3, threshold=3):
     mask = snr > threshold
 
     nondet = ax.scatter(u[~mask], v[~mask], s=s, color='gray', label='S/N < %s'%threshold)
-    scat = ax.scatter(u[mask], v[mask], c=snr[mask], s=s)
-    scat = ax.scatter(-u[mask], -v[mask], c=snr[mask], s=s)
+    scat = ax.scatter(u[mask], v[mask], c=snr[mask], s=s, norm='log')
+    scat = ax.scatter(-u[mask], -v[mask], c=snr[mask], s=s, norm='log')
     
     ax.invert_xaxis()
     ax.set_aspect('equal')
@@ -107,20 +107,20 @@ def plot_uv_snr_grid(obs, out, ncells, fs=15, s=3):
     ax.set_xlabel('$u$ (G$\lambda$)', fontsize=fs)
     ax.set_ylabel('$v$ (G$\lambda$)', fontsize=fs)
 
-    cbar = fig.colorbar(scat)
+    cbar = fig.colorbar(scat, fraction=0.040, pad=0.13, orientation='horizontal')
     cbar.set_label('S/N')
-    
+    plt.tight_layout()
     fig.savefig(out + '_uv_snr_grid.pdf', bbox_inches='tight')
         
     return 0
 
 def plot_fft(fftim, out):
-    fftim.display(scale='gamma', label_type='scale', has_title=False, export_pdf=out + '_fft.pdf')
+    fftim.display(scale='gamma', label_type='scale', cbar_unit=['Tb'], cbar_orientation='horizontal', has_title=False, export_pdf=out + '_fft.pdf')
         
     return 0
 
 def plot_groundtruth(model, out):
-    model.display(scale='gamma', label_type='scale', has_title=False, export_pdf=out + '_groundtruth.pdf')
+    model.display(scale='gamma', label_type='scale', cbar_unit=['Tb'], cbar_orientation='horizontal', has_title=False, export_pdf=out + '_groundtruth.pdf')
         
     return 0
 
@@ -141,6 +141,10 @@ def main(params):
     if modeltype == 'image':
         model = eh.image.load_fits(params['image_path'])
         plot_groundtruth(model, out)
+    elif modeltype == 'movie':
+        mov = eh.movie.load_hdf5(params['image_path'])
+        avgim = mov.avg_frame()
+        plot_groundtruth(avgim, out)
         
     if params['grid_uv'] == 'True':
         obsfile_grid = params['outdir'] + '/' + params['outtag'] + '_gridded.uvfits'

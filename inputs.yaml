@@ -71,6 +71,9 @@ bw: 2
 # Aperture efficiency
 eta: 0.8
 
+# Quantization efficiency
+eta_q: 0.88
+
 #####################################
 # Optional steps
 #####################################

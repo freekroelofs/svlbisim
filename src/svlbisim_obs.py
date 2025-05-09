@@ -3,7 +3,7 @@ import numpy as np
 import os
 import numpy.lib.recfunctions as rec
 
-def observe(modelfile, modeltype, uvfile, Tsys, D, eta, bw, out, kb=1.38064852e-23):
+def observe(modelfile, modeltype, uvfile, Tsys, D, eta, eta_q, bw, out, kb=1.38064852e-23):
 
     # Prepare uv data and image or movie
     uvdata = eh.obsdata.load_uvfits(uvfile)
@@ -11,7 +11,7 @@ def observe(modelfile, modeltype, uvfile, Tsys, D, eta, bw, out, kb=1.38064852e-
     # Calculate system noise
     A = eta * np.pi*(0.5*D)**2 # Antenna effective area
     SEFD = (2*kb*Tsys/A)*1e26
-    sigma_const = SEFD/(0.88*np.sqrt(2*bw))
+    sigma_const = SEFD/(eta_q*np.sqrt(2*bw))
 
     # Calculate and add sigmas to observation object
     for i in range(len(uvdata.data)):
@@ -60,8 +60,9 @@ def main(params):
     eta = params['eta']
     Tsys = params['tsys']
     D = params['diameter']
+    eta_q = params['eta_q']
 
-    obs = observe(modelfile, modeltype, uvfile, Tsys, D, eta, bw, out)
+    obs = observe(modelfile, modeltype, uvfile, Tsys, D, eta, eta_q, bw, out)
 
     return obs
 
