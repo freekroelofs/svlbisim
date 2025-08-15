@@ -8,8 +8,6 @@ from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 from matplotlib.cbook import get_sample_data
 import matplotlib.image as image
 
-#TODO: Clean this up
-
 def imscatter(x, y, image, ax=None, zoom=1):
     if ax is None:
         ax = plt.gca()
@@ -112,24 +110,12 @@ def animate_orbits_uvcov_3sat(uvfile, radius1, radius2, radius3, inc, pa, tstop,
     t_orig = uvdata.data['time']*3600
     times = np.linspace(t_orig[0], tstop, num=nframes)
 
-    #mask1 = uvdata['t1']=='SAT1'
-    #mask2 = uvdata['t2']=='SAT2'
-    #mask12 = mask1*mask2
-    #uvdata12 = uvdata[mask12]
     uvdata12 = uvdata.flag_sites(['SAT3']).data
     t_orig12 = uvdata12['time']*3600
 
-    #mask1 = uvdata['t1']=='SAT2'
-    #mask2 = uvdata['t2']=='SAT3'
-    #mask23 = mask1*mask2
-    #uvdata23 = uvdata[mask23]
     uvdata23 = uvdata.flag_sites(['SAT1']).data
     t_orig23 = uvdata23['time']*3600
 
-    #mask1 = uvdata['t1']=='SAT1'
-    #mask2 = uvdata['t2']=='SAT3'
-    #mask31 = mask1*mask2
-    #uvdata31 = uvdata[mask31]
     uvdata31 = uvdata.flag_sites(['SAT2']).data
     t_orig31 = uvdata31['time']*3600
               

@@ -53,15 +53,6 @@ def griduv(obs, out, ncells, fov):
         print('Grid cell size too large, setting to uv-smearing limit')
         ncells = ncells_smearlimit
     print('Gridding visibilities in %s x %s grid'%(ncells, ncells))
-
-    # Pre-process observation
-    # Stokes I only: move everything to v > 0
-    #obs_preproc = obs.copy()
-    #for i in range(len(obs_preproc.data)):
-    #    if obs_preproc.data['v'][i] < 0:
-    #        obs_preproc.data['v'][i] *= -1
-    #        obs_preproc.data['u'][i] *= -1
-    #        obs_preproc.data['vis'][i] = np.conj(obs_preproc.data['vis'][i])
     
     # Add visibility conjugates before gridding
     obs_preproc = obs.copy()
