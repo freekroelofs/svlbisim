@@ -38,7 +38,7 @@ def plot_uv_amp(obs, out, fs=15, s=3):
         
     return 0
 
-def plot_uv_snr(obs, out, fs=15, s=3):
+def plot_uv_snr(obs, out, fs=15, s=3, vmin=0.1, vmax=1e3):
     fig, ax = plt.subplots()
     u = obs.data['u']/1e9
     v = obs.data['v']/1e9
@@ -47,22 +47,22 @@ def plot_uv_snr(obs, out, fs=15, s=3):
     amp_debias = eh.observing.obs_helpers.amp_debias(amp, sigma)
     snr = amp_debias/sigma
     
-    scat = ax.scatter(u, v, c=snr, s=s, norm='log')
-    scat2 = ax.scatter(-u, -v, c=snr, s=s, norm='log')
+    scat = ax.scatter(u, v, c=snr, s=s, norm='log', vmin=vmin, vmax=vmax, edgecolor='none')
+    scat2 = ax.scatter(-u, -v, c=snr, s=s, norm='log', vmin=vmin, vmax=vmax, edgecolor='none')
 
     ax.invert_xaxis()
     ax.set_aspect('equal')
     ax.set_xlabel('$u$ (G$\lambda$)', fontsize=fs)
     ax.set_ylabel('$v$ (G$\lambda$)', fontsize=fs)
 
-    cbar = fig.colorbar(scat)
+    cbar = fig.colorbar(scat, fraction=0.040, pad=0.14, orientation='horizontal')
     cbar.set_label('S/N')
     
     fig.savefig(out + '_uv_snr.pdf', bbox_inches='tight')
         
     return 0
 
-def plot_uv_snrthreshold(obs, out, fs=15, s=3, threshold=3):
+def plot_uv_snrthreshold(obs, out, fs=15, s=3, threshold=1):
     fig, ax = plt.subplots()
     u = obs.data['u']/1e9
     v = obs.data['v']/1e9
@@ -72,9 +72,11 @@ def plot_uv_snrthreshold(obs, out, fs=15, s=3, threshold=3):
     snr = amp_debias/sigma
     mask = snr > threshold
 
-    nondet = ax.scatter(u[~mask], v[~mask], s=s, color='gray', label='S/N < %s'%threshold)
-    scat = ax.scatter(u[mask], v[mask], c=snr[mask], s=s, norm='log')
-    scat = ax.scatter(-u[mask], -v[mask], c=snr[mask], s=s, norm='log')
+    
+    scat = ax.scatter(u[mask], v[mask], c=snr[mask], s=s, norm='log', edgecolor='none')
+    scat = ax.scatter(-u[mask], -v[mask], c=snr[mask], s=s, norm='log', edgecolor='none')
+    nondet = ax.scatter(u[~mask], v[~mask], s=s, color='gray', label='S/N < %s'%threshold, edgecolor='none')
+    #nondet = ax.scatter(-u[~mask], -v[~mask], s=s, color='gray')
     
     ax.invert_xaxis()
     ax.set_aspect('equal')
@@ -83,31 +85,30 @@ def plot_uv_snrthreshold(obs, out, fs=15, s=3, threshold=3):
 
     ax.legend()
 
-    cbar = fig.colorbar(scat)
+    cbar = fig.colorbar(scat, fraction=0.040, pad=0.14, orientation='horizontal')
     cbar.set_label('S/N')
     
     fig.savefig(out + '_uv_snrthreshold.pdf', bbox_inches='tight')
         
     return 0
 
-def plot_uv_snr_grid(obs, out, ncells, fs=15, s=3):
+def plot_uv_snr_grid(obs, out, ncells, fs=15, s=5, vmin=0.1, vmax=1e3):
     fig, ax = plt.subplots()
     u = obs.data['u']/1e9
     v = obs.data['v']/1e9
     amp = np.abs(obs.data['vis'])
     sigma = obs.data['sigma']
     amp_debias = eh.observing.obs_helpers.amp_debias(amp, sigma)
-    snr = amp_debias/sigma
-    
-    scat = ax.scatter(u, v, c=snr, s=s, norm='log')
-    scat2 = ax.scatter(-u, -v, c=snr, s=s, norm='log')
+    snr = amp/sigma
+    scat = ax.scatter(u, v, c=snr, s=s, norm='log', vmin=vmin, vmax=vmax, edgecolor='none', marker='s')
+    #scat2 = ax.scatter(-u, -v, c=snr, s=s, norm='log', vmin=vmin, vmax=vmax, edgecolor='none')
 
     ax.invert_xaxis()
     ax.set_aspect('equal')
     ax.set_xlabel('$u$ (G$\lambda$)', fontsize=fs)
     ax.set_ylabel('$v$ (G$\lambda$)', fontsize=fs)
 
-    cbar = fig.colorbar(scat, fraction=0.040, pad=0.13, orientation='horizontal')
+    cbar = fig.colorbar(scat, fraction=0.040, pad=0.14, orientation='horizontal')
     cbar.set_label('S/N')
     plt.tight_layout()
     fig.savefig(out + '_uv_snr_grid.pdf', bbox_inches='tight')

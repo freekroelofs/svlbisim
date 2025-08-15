@@ -74,6 +74,9 @@ eta: 0.8
 # Quantization efficiency
 eta_q: 0.88
 
+# Integration time per measurement (set to 'auto' to base on uv-smearing limit
+tint:auto
+
 #####################################
 # Optional steps
 #####################################

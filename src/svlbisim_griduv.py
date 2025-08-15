@@ -6,7 +6,11 @@ import numpy.lib.recfunctions as rec
 
 def gen_visgrid(obs, ncells, maxbl):
     visgrid = np.zeros((ncells, ncells), dtype='complex')
+    qvisgrid = np.zeros((ncells, ncells), dtype='complex')
+    uvisgrid = np.zeros((ncells, ncells), dtype='complex')
+    vvisgrid = np.zeros((ncells, ncells), dtype='complex')
     sigmagrid = np.zeros((ncells, ncells))
+
     nums = np.zeros((ncells, ncells))
 
     for i in range(len(obs.data)):
@@ -17,6 +21,9 @@ def gen_visgrid(obs, ncells, maxbl):
         if (vgrid > 0):
            vgrid -= 1
         visgrid[ugrid,vgrid] += obs.data['vis'][i]
+        qvisgrid[ugrid,vgrid] += obs.data['qvis'][i]
+        uvisgrid[ugrid,vgrid] += obs.data['uvis'][i]
+        vvisgrid[ugrid,vgrid] += obs.data['vvis'][i]
         sigmagrid[ugrid,vgrid] += obs.data['sigma'][i]**2
         nums[ugrid,vgrid]+=1.
         
@@ -27,8 +34,11 @@ def gen_visgrid(obs, ncells, maxbl):
             sigmagrid[ugrid,vgrid] = np.sqrt(sigmagrid[ugrid,vgrid])/nums[ugrid,vgrid]
 
     visgrid = visgrid/nums
+    qvisgrid = qvisgrid/nums
+    uvisgrid = uvisgrid/nums
+    vvisgrid = vvisgrid/nums
 
-    return visgrid, sigmagrid, nums
+    return visgrid, qvisgrid, uvisgrid, vvisgrid, sigmagrid, nums
 
 
 def griduv(obs, out, ncells, fov):
@@ -46,15 +56,25 @@ def griduv(obs, out, ncells, fov):
 
     # Pre-process observation
     # Stokes I only: move everything to v > 0
+    #obs_preproc = obs.copy()
+    #for i in range(len(obs_preproc.data)):
+    #    if obs_preproc.data['v'][i] < 0:
+    #        obs_preproc.data['v'][i] *= -1
+    #        obs_preproc.data['u'][i] *= -1
+    #        obs_preproc.data['vis'][i] = np.conj(obs_preproc.data['vis'][i])
+    
+    # Add visibility conjugates before gridding
     obs_preproc = obs.copy()
-    for i in range(len(obs_preproc.data)):
-        if obs_preproc.data['v'][i] < 0:
-            obs_preproc.data['v'][i] *= -1
-            obs_preproc.data['u'][i] *= -1
-            obs_preproc.data['vis'][i] = np.conj(obs_preproc.data['vis'][i])
+    obs_conj = []
+    for i in range(len(obs.data)):
+        obs_conj.append(np.array((obs.data['time'][i], obs.data['tint'][i], 'SAT1', 'SAT2', 0.0, 0.0,
+                -obs.data['u'][i], -obs.data['v'][i],
+                np.conj(obs.data['vis'][i]), np.conj(obs.data['qvis'][i]), np.conj(obs.data['uvis'][i]), np.conj(obs.data['vvis'][i]), obs.data['sigma'][i], obs.data['qsigma'][i], obs.data['usigma'][i], obs.data['vsigma'][i]),
+                dtype=eh.DTPOL_STOKES))
+    obs_preproc.data=rec.stack_arrays((obs.data, obs_conj), asrecarray=True, usemask=False)
     
     # Grid visibilities        
-    visgrid, sigmagrid, nums = gen_visgrid(obs_preproc, ncells, maxbl)
+    visgrid, qvisgrid, uvisgrid, vvisgrid, sigmagrid, nums = gen_visgrid(obs_preproc, ncells, maxbl)
 
     # Make observation object
     obs_grid = obs_preproc.copy()
@@ -66,7 +86,7 @@ def griduv(obs, out, ncells, fov):
         for vgrid in range(len(visgrid[0])):
             griddata.append(np.array((ctr, nums[ugrid, vgrid], 'SAT1', 'SAT2', 0.0, 0.0,
                             ugrid*(maxbl*2/ncells) - maxbl, vgrid*(maxbl*2/ncells) - maxbl,
-                            visgrid[ugrid,vgrid], 0.0, 0.0, 0.0, sigmagrid[ugrid,vgrid], 0.0, 0.0, sigmagrid[ugrid,vgrid]),
+                            visgrid[ugrid,vgrid], qvisgrid[ugrid,vgrid], uvisgrid[ugrid,vgrid], vvisgrid[ugrid,vgrid], sigmagrid[ugrid,vgrid], sigmagrid[ugrid,vgrid], sigmagrid[ugrid,vgrid], sigmagrid[ugrid,vgrid]),
                             dtype=eh.DTPOL_STOKES))
             ctr +=1
     obs_grid.data=rec.stack_arrays((obs_grid.data, griddata), asrecarray=True, usemask=False)
@@ -91,22 +111,40 @@ def calc_fft(obs, out, ncells):
     for i in range(len(obs.data)):
         obs_conj.append(np.array((obs.data['time'][i], obs.data['tint'][i], 'SAT1', 'SAT2', 0.0, 0.0,
                 -obs.data['u'][i], -obs.data['v'][i],
-                np.conj(obs.data['vis'][i]), 0.0, 0.0, 0.0, obs.data['sigma'][i], 0.0, 0.0, -obs.data['sigma'][i]),
+                np.conj(obs.data['vis'][i]),  np.conj(obs.data['qvis'][i]),  np.conj(obs.data['uvis'][i]),  np.conj(obs.data['vvis'][i]), obs.data['qsigma'][i], obs.data['usigma'][i], obs.data['vsigma'][i], obs.data['sigma'][i]),
                 dtype=eh.DTPOL_STOKES))
     obs_preproc.data=rec.stack_arrays((obs.data, obs_conj), asrecarray=True, usemask=False)
     
-    visgrid, sigmagrid, nums = gen_visgrid(obs_preproc, ncells, maxbl)
+    visgrid, qvisgrid, uvisgrid, vvisgrid, sigmagrid, nums = gen_visgrid(obs_preproc, ncells, maxbl)
 
     # Make image and rotate/flip
     fft=np.abs(np.fft.fftshift(np.fft.ifft2(visgrid)))
+    qfft=np.abs(np.fft.fftshift(np.fft.ifft2(qvisgrid)))
+    ufft=np.abs(np.fft.fftshift(np.fft.ifft2(uvisgrid)))
+    vfft=np.abs(np.fft.fftshift(np.fft.ifft2(vvisgrid)))
     fov = 1 / (maxbl*2/ncells)
     im = eh.image.make_square(obs_preproc, ncells, fov)
     im.imvec = fft.flatten()
+    im.qvec = qfft.flatten()
+    im.uvec = ufft.flatten()
+    im.vvec = vfft.flatten()
     im = im.rotate(np.pi/2)
     img = im.imvec.reshape((im.ydim, im.xdim))
+    qimg = im.qvec.reshape((im.ydim, im.xdim))
+    uimg = im.uvec.reshape((im.ydim, im.xdim))
+    vimg = im.vvec.reshape((im.ydim, im.xdim))
     img = np.flip(img,0)
     img = img.reshape(im.ydim**2)
+    qimg = np.flip(qimg,0)
+    qimg = qimg.reshape(im.ydim**2)
+    uimg = np.flip(uimg,0)
+    uimg = uimg.reshape(im.ydim**2)
+    vimg = np.flip(vimg,0)
+    vimg = vimg.reshape(im.ydim**2)
     im.imvec = img
+    im.qvec = qimg
+    im.uvec = uimg
+    im.vvec = vimg
     im.save_fits(out + '_fft.fits')
 
     return im

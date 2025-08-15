@@ -20,7 +20,7 @@ def mask_earthshadow(positions, radius_earth=6378.):
 
     return mask
 
-def calc_uv(r1, r2, inc, pa, timerange, nu, fov, GM=3.986004418e14, radius_earth=6378.):
+def calc_uv(r1, r2, inc, pa, timerange, nu, fov, tintt, GM=3.986004418e14, radius_earth=6378.):
     
     # Find timestamps using uv-smearing limit
     times = np.array([0.])
@@ -39,12 +39,16 @@ def calc_uv(r1, r2, inc, pa, timerange, nu, fov, GM=3.986004418e14, radius_earth
         # Calculate tint using uv smearing limit
         omega = np.sqrt(GM / (1000. * r1)) / (1000. * r1)
         period = (2. * np.pi) / omega       
-        baseline = np.sqrt(us12**2+vs12**2)        
-        tint = period/(2*np.pi*fov*baseline)
+        baseline = np.sqrt(us12**2+vs12**2)
+        if tintt == 'auto':
+            tint = period/(2*np.pi*fov*baseline)
 
-        # Have at least 10 points per orbit (for short baselines)        
-        if tint > period/36.:
-            tint = period/36.
+            # Have at least 10 points per orbit (for short baselines)        
+            if tint > period/36.:
+                tint = period/36.
+        else:
+            tint = tintt
+          
         times[0] += tint
         finaltimes.append(times[0])
         
@@ -150,7 +154,7 @@ def main(params):
     radius1 = params['radius1']
     radius3 = radius1 + params['delta_r']
     if nsat == 3:
-        radius2 = radius1 + (radius3-radius1)/2
+        radius2 = radius1 + (radius3-radius1)/3
     inclination = params['inclination']*np.pi/180 
     positionangle = params['positionangle']*np.pi/180
     timerange = [params['tstart']*3600*24, params['tstop']*3600*24]
@@ -160,13 +164,15 @@ def main(params):
     nu = params['nu']
     bw = params['bw']
     fov = params['fov']*eh.RADPERUAS
+    tint = params['tint']
     out = params['outdir'] + '/' + params['outtag']
     
+    
     # Generate uv coordinates
-    uvdata31 = calc_uv(radius3, radius1, inclination, positionangle, timerange, nu, fov)
+    uvdata31 = calc_uv(radius3, radius1, inclination, positionangle, timerange, nu, fov, tint)
     if nsat == 3:
-        uvdata12 = calc_uv(radius1, radius2, inclination, positionangle, timerange, nu, fov)
-        uvdata23 = calc_uv(radius2, radius3, inclination, positionangle, timerange, nu, fov)
+        uvdata12 = calc_uv(radius1, radius2, inclination, positionangle, timerange, nu, fov, tint)
+        uvdata23 = calc_uv(radius2, radius3, inclination, positionangle, timerange, nu, fov, tint)
         uvdata = [uvdata12, uvdata23, uvdata31]
         export_uvfits(uvdata, nsat, source, ra, dec, nu, bw, out)
     elif params['nsat'] == 2:

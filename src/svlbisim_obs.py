@@ -18,6 +18,9 @@ def observe(modelfile, modeltype, uvfile, Tsys, D, eta, eta_q, bw, out, kb=1.380
         tint = uvdata.data['tint'][i]
         sigma = sigma_const/np.sqrt(tint)
         uvdata.data['sigma'][i] = sigma
+        uvdata.data['qsigma'][i] = sigma
+        uvdata.data['usigma'][i] = sigma
+        uvdata.data['vsigma'][i] = sigma
 
     # Observe image or movie
     if modeltype == 'image':
