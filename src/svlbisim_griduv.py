@@ -56,13 +56,13 @@ def griduv(obs, out, ncells, fov):
     
     # Add visibility conjugates before gridding
     obs_preproc = obs.copy()
-    obs_conj = []
-    for i in range(len(obs.data)):
-        obs_conj.append(np.array((obs.data['time'][i], obs.data['tint'][i], 'SAT1', 'SAT2', 0.0, 0.0,
-                -obs.data['u'][i], -obs.data['v'][i],
-                np.conj(obs.data['vis'][i]), np.conj(obs.data['qvis'][i]), np.conj(obs.data['uvis'][i]), np.conj(obs.data['vvis'][i]), obs.data['sigma'][i], obs.data['qsigma'][i], obs.data['usigma'][i], obs.data['vsigma'][i]),
-                dtype=eh.DTPOL_STOKES))
-    obs_preproc.data=rec.stack_arrays((obs.data, obs_conj), asrecarray=True, usemask=False)
+    #obs_conj = []
+    #for i in range(len(obs.data)):
+    #    obs_conj.append(np.array((obs.data['time'][i], obs.data['tint'][i], 'SAT1', 'SAT2', 0.0, 0.0,
+    #            -obs.data['u'][i], -obs.data['v'][i],
+    #            np.conj(obs.data['vis'][i]), np.conj(obs.data['qvis'][i]), np.conj(obs.data['uvis'][i]), np.conj(obs.data['vvis'][i]), obs.data['sigma'][i], obs.data['qsigma'][i], obs.data['usigma'][i], obs.data['vsigma'][i]),
+    #            dtype=eh.DTPOL_STOKES))
+    #obs_preproc.data=rec.stack_arrays((obs.data, obs_conj), asrecarray=True, usemask=False)
     
     # Grid visibilities        
     visgrid, qvisgrid, uvisgrid, vvisgrid, sigmagrid, nums = gen_visgrid(obs_preproc, ncells, maxbl)
@@ -93,8 +93,16 @@ def griduv(obs, out, ncells, fov):
 
     return obs_grid
 
-def calc_fft(obs, out, ncells):
+def calc_fft(obs_grid, out, ncells, fov):
+    im = obs_grid.dirtyimage(ncells,fov)
+    im.save_fits(out + '_fft.fits')
+
+    return im
+
+def calc_fft_depr(obs, out, ncells):
+
     maxbl = np.max(np.sqrt(obs.data['u']**2+obs.data['v']**2))
+
     
     # FFT image: need to add visibility conjugates before gridding
     obs_preproc = obs.copy()
@@ -107,6 +115,7 @@ def calc_fft(obs, out, ncells):
     obs_preproc.data=rec.stack_arrays((obs.data, obs_conj), asrecarray=True, usemask=False)
     
     visgrid, qvisgrid, uvisgrid, vvisgrid, sigmagrid, nums = gen_visgrid(obs_preproc, ncells, maxbl)
+
 
     # Make image and rotate/flip
     fft=np.abs(np.fft.fftshift(np.fft.ifft2(visgrid)))
@@ -148,14 +157,17 @@ def main(params):
     fov = float(params['fov'])*eh.RADPERUAS
     ncells = int(params['ncells'])
     obs_grid = griduv(obs, out, ncells, fov)
-    im_fft = calc_fft(obs, out, ncells)
+    #im_fft = calc_fft(obs, out, ncells)
+    im_fft = calc_fft(obs_grid, out, ncells, fov)
 
     # Deblur FFT for SGRA
     if params['source'] == 'SGRA':
         sm = so.ScatteringModel()
-        obs_deblur = sm.Deblur_obs(obs)
+        obs_deblur = sm.Deblur_obs(obs_grid)
         out_deblur = params['outdir'] + '/' + params['outtag'] + '_deblur'
-        im_fft_deblur = calc_fft(obs_deblur, out_deblur, ncells)
+        
+        #im_fft_deblur = calc_fft(obs_deblur, out_deblur, ncells)
+        im_fft_deblur = calc_fft(obs_deblur, out_deblur, ncells, fov)
 
     return 0
 
