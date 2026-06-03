@@ -1,0 +1,62 @@
+############################################################
+# Parameters to set for mcmc running
+############################################################
+
+# Number of cores for allocated to the mcmc run
+N_cores: 12
+
+# number of chains, warmup samples and normal samples 
+N_chains: 18
+N_samples: 9000
+N_warmup: 4500
+chain_method: vectorized
+
+
+############################################################
+# Sorting Data
+############################################################
+
+# The baseline domain to perform fitting in
+u_domain: [22, 45]    # In Glambda
+
+
+############################################################
+# Defining priors
+############################################################
+R0_d:     [26, 30]        # in uas
+beta0_d:  [0.01, 2]        # total flux (upper bound a1 and b1 should not be lower than lower bound)
+a1_d:     [-0.4, 0.5]
+b1_d:     [-0.4, 0.5]
+w_d:      [0, 5]
+
+################ Priors for ellipse shape ##################
+Rf_d:     [1, 1.4]         # fraction
+psi_d:    [-1.57079632679, 1.57079632679]
+
+################ Priors for circlipse shape ################
+R1_d:     [0, 3]           # in uas
+R2_d:     [0, 3]           # in uas
+phi0_d:    [0, 1.57079632679]
+
+
+############################################################
+# Parameters for generating mock data from model
+############################################################
+n_cells: 2048
+noise_sigma: 0.001
+
+################ True parameters of the model ##############
+R0: 25.5      # in uas
+beta0: 1
+a1: 0.0
+b1: 0.33
+w: 1          # in uas
+
+# ellipse
+Rf: 1.05      # in uas
+psi: 0.0      # raw floats representing fractions of pi!
+
+# circlipse
+R1: 1.2       # in uas
+R2: 1.4       # in uas
+phi0: 0.1

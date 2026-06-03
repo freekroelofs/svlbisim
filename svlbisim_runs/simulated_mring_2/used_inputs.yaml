@@ -1,0 +1,96 @@
+##########################################
+# Parameters to set for svlbi simulation
+##########################################
+
+# Output directory
+outdir: '/net/vdesk/data2/tmayer/svlbisim/simulated_mring_2'
+
+# Output uvfits basename
+outtag: 'output_mring_2'
+
+##########################################
+# Source parameters
+##########################################
+
+# Path to fits image
+image_path: '/net/vdesk/data2/tmayer/svlbisim/simulated_mring/mring_image.fits'
+
+# Source name
+source: 'SgrA'
+
+# Right Ascension
+ra: '17 h 45 m 40.0409 s'
+
+# Declination
+dec: '-29 deg 0 m 28.118 s'
+
+# Observing frequency (Hz)
+nu: 690000000000.
+
+# Field of view (uas; for uv-smearing limit)
+fov: 160.
+
+##########################################
+# Orbit parameters
+##########################################
+
+# Radius of the inner orbit (km)
+radius1: 13500.0
+
+# Distance between inner and outer orbit (km)
+delta_r: 413.
+
+# Number of satellites (pick 2 or 3 for now)
+nsat: 3
+
+# Orbit inclination (deg)
+inclination: 29.0
+
+# Orbit position angle (deg)
+positionangle: 39.36 
+
+# Start time of observations (days); 0 means start at closest approach
+tstart: 0
+
+# Stop time of observations (days)
+tstop: 30.
+
+#####################################
+# System noise parameters
+#####################################
+
+# System temperature (K)
+tsys: 50
+
+# Dish diameter (m)
+diameter: 4.0
+
+# Observing bandwidth (GHz)
+bw: 5
+
+# Aperture efficiency
+eta: 0.9
+
+# Quantization efficiency
+eta_q: 0.88
+
+# Integration time per measurement (set to 'auto' to base on uv-smearing limit
+tint: auto
+
+#####################################
+# Optional steps
+#####################################
+
+# Set to 'True' to create an additional uvfits with gridded visibilities
+grid_uv: 'True'
+
+# Number of uv grid cells
+ncells: 128
+
+# Set to 'True' to output some generally useful plots
+make_plots: 'True'
+
+# Set to 'True' to run a basic image reconstruction with ehtim
+make_image: 'True'
+
+
