@@ -14,13 +14,11 @@ def observe(modelfile, modeltype, uvfile, Tsys, D, eta, eta_q, bw, out, kb=1.380
     sigma_const = SEFD/(eta_q*np.sqrt(2*bw))
 
     # Calculate and add sigmas to observation object
-    for i in range(len(uvdata.data)):
-        tint = uvdata.data['tint'][i]
-        sigma = sigma_const/np.sqrt(tint)
-        uvdata.data['sigma'][i] = sigma
-        uvdata.data['qsigma'][i] = sigma
-        uvdata.data['usigma'][i] = sigma
-        uvdata.data['vsigma'][i] = sigma
+    sigma = sigma_const/np.sqrt(uvdata.data['tint'])
+    uvdata.data['sigma'] = sigma
+    uvdata.data['qsigma'] = sigma
+    uvdata.data['usigma'] = sigma
+    uvdata.data['vsigma'] = sigma
 
     # Observe image or movie
     if modeltype == 'image':

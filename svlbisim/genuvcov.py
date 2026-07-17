@@ -64,8 +64,7 @@ def calc_uv(r1, r2, inc, pa, timerange, nu, fov, tintt, GM=3.986004418e14, radiu
             times[0] += tint
             finaltimes.append(times[0])
     else:
-        # Fixed integration time: timestamps are a plain arithmetic sequence,
-        # so there's no need to evaluate uv_at_time()/baseline at each step.
+        # Fixed integration time
         nsteps = int(np.ceil(timerange[1] / tintt))
         finaltimes = list(tintt * np.arange(nsteps + 1))
 
