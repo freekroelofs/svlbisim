@@ -75,7 +75,7 @@ eta: 0.8
 eta_q: 0.88
 
 # Integration time per measurement (set to 'auto' to base on uv-smearing limit
-tint:auto
+tint: auto
 
 #####################################
 # Optional steps

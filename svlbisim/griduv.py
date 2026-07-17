@@ -99,7 +99,7 @@ def calc_fft(obs_grid, out, ncells, fov):
 
     return im
 
-def calc_fft_depr(obs, out, ncells):
+def calc_fft_old(obs, out, ncells):
 
     maxbl = np.max(np.sqrt(obs.data['u']**2+obs.data['v']**2))
 
@@ -145,7 +145,7 @@ def calc_fft_depr(obs, out, ncells):
     im.qvec = qimg
     im.uvec = uimg
     im.vvec = vimg
-    im.save_fits(out + '_fft.fits')
+    im.save_fits(out + '_fft-old.fits')
 
     return im
 
@@ -159,6 +159,7 @@ def main(params):
     obs_grid = griduv(obs, out, ncells, fov)
     #im_fft = calc_fft(obs, out, ncells)
     im_fft = calc_fft(obs_grid, out, ncells, fov)
+    im_fft = calc_fft_old(obs_grid, out, ncells)
 
     # Deblur FFT for SGRA
     if params['source'] == 'SGRA':

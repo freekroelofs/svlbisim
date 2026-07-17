@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "svlbisim"
+version = "0.1.0"
+description = "Toolkit to simulate space-to-space VLBI observations"
+requires-python = ">=3.9"
+dependencies = [
+    "ehtim",
+    "numpy",
+    "matplotlib",
+    "pyyaml",
+]
+
+[tool.setuptools]
+packages = ["svlbisim"]
+
+[tool.setuptools.package-data]
+svlbisim = ["img/*.png"]

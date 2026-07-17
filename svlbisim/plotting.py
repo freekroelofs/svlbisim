@@ -2,6 +2,7 @@ import ehtim as eh
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.cm import ScalarMappable
+import math
 
 def plot_uvdist_amp(obs, out, fs=15):
     fig, ax = plt.subplots()
@@ -126,7 +127,7 @@ def plot_groundtruth(model, out):
         
     return 0
 
-def plot_im_pol(im, out, Pmin=0., Pmax=1., cfun='afmhot', axis=True, dobar=True, scale=False, fs=12, pcut=0.05, nvec=50):
+def plot_im_pol(im, out, Pmin=0., Pmax=1., cfun='afmhot', axis=True, dobar=True, scale=True, fs=12, pcut=0.05, nvec=50):
     # Adapted from EHT pol plotting script
 
     Imax=max(im.imvec)
@@ -200,10 +201,10 @@ def plot_im_pol(im, out, Pmin=0., Pmax=1., cfun='afmhot', axis=True, dobar=True,
         end = start + fov_scale/fov_uas * im.xdim # determine the end location 
         plt.plot([start*im.psize/eh.RADPERUAS-2, end*im.psize/eh.RADPERUAS-2],
                  [-(im.ydim-start-3)*im.psize/eh.RADPERUAS/2, -(im.ydim-start-3)*im.psize/eh.RADPERUAS/2],
-                 color="black", lw=3) # plot a line
+                 color="white", lw=3) # plot a line
         plt.text(x=(start+end)/2.0*im.psize/eh.RADPERUAS-2, y=-(im.ydim-start+im.ydim/30)*im.psize/eh.RADPERUAS/2, 
-                 s= str(fov_scale) + " $\mu$as", color="black", 
-                 ha="center", va="center",fontsize=50.)
+                 s= str(fov_scale) + " $\mu$as", color="white", 
+                 ha="center", va="center",fontsize=fs)
 
     plt.xticks([])
     plt.yticks([])
@@ -236,6 +237,7 @@ def main(params):
     elif modeltype == 'movie':
         mov = eh.movie.load_hdf5(params['image_path'])
         avgim = mov.avg_frame()
+        model = avgim
         plot_groundtruth(avgim, out)
         if np.any(model.qvec):
             plot_im_pol(avgim, out+ '_groundtruth_pol.pdf')

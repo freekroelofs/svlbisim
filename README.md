@@ -2,7 +2,12 @@
 Toolkit to simulate space-to-space VLBI observations
 
 ## Requirements
-python3, ehtim, numpy, matplotlib, yaml
+python3, ehtim, numpy, matplotlib, pyyaml
+
+## Installation
+```
+pip install -e .
+```
 
 ## Usage
 All input parameters can be specified in inputs.yaml  

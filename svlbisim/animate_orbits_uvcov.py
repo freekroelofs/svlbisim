@@ -1,7 +1,7 @@
 import ehtim as eh
 import numpy as np
 import os
-from svlbisim_genuvcov import calc_positions
+from svlbisim.genuvcov import calc_positions
 import matplotlib.pyplot as plt
 plt.style.use('dark_background')
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
