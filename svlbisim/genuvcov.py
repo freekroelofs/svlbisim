@@ -2,6 +2,7 @@ import ehtim as eh
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import math
 
 def calc_positions(radius, inc, pa, times, GM=3.986004418e14):
     omega = np.sqrt(GM / (1000. * radius)) / (1000. * radius)
@@ -10,6 +11,23 @@ def calc_positions(radius, inc, pa, times, GM=3.986004418e14):
     positions = np.array([np.cos(pa) * temp[0] + np.sin(pa) * temp[2], temp[1], np.cos(pa) * temp[2] - np.sin(pa) * temp[0]])
 
     return positions
+
+def uv_at_time(t, r1, r2, inc, pa, omega1, omega2, nu):
+    # Scalar equivalent of calc_positions() for a single time value
+    x01 = math.cos(t * omega1) * r1
+    y01 = math.sin(t * omega1) * r1
+    x1 = math.cos(pa) * x01 + math.sin(pa) * math.sin(inc) * y01
+    y1 = math.cos(inc) * y01
+
+    x02 = math.cos(t * omega2) * r2
+    y02 = math.sin(t * omega2) * r2
+    x2 = math.cos(pa) * x02 + math.sin(pa) * math.sin(inc) * y02
+    y2 = math.cos(inc) * y02
+
+    u = (x1 - x2) * 1000. / (3e8/nu)
+    v = (y1 - y2) * 1000. / (3e8/nu)
+
+    return u, v
 
 def mask_earthshadow(positions, radius_earth=6378.):
     # Take care of Earth's shadow being in the way: mask all positions where this is the case.
@@ -23,35 +41,34 @@ def mask_earthshadow(positions, radius_earth=6378.):
 def calc_uv(r1, r2, inc, pa, timerange, nu, fov, tintt, GM=3.986004418e14, radius_earth=6378.):
     
     # Find timestamps using uv-smearing limit
-    times = np.array([0.])
-    finaltimes = [0.]
-    positions1=[]
-    positions2=[]
+    if tintt == 'auto':
+        times = np.array([0.])
+        finaltimes = [0.]
 
-    while times[0] < timerange[1]:
-        positions1 = calc_positions(r1, inc, pa, times)
-        positions2 = calc_positions(r2, inc, pa, times)
+        omega1 = np.sqrt(GM / (1000. * r1)) / (1000. * r1)
+        omega2 = np.sqrt(GM / (1000. * r2)) / (1000. * r2)
+        period = (2. * np.pi) / omega1
 
-        # Calculate uv coordinates
-        us12 = (positions1[0] - positions2[0]) * 1000. / (3e8/nu)
-        vs12 = (positions1[1] - positions2[1]) * 1000. / (3e8/nu)
+        # Calculate uv-coverage
+        while times[0] < timerange[1]:
+            u, v = uv_at_time(times[0], r1, r2, inc, pa, omega1, omega2, nu)
 
-        # Calculate tint using uv smearing limit
-        omega = np.sqrt(GM / (1000. * r1)) / (1000. * r1)
-        period = (2. * np.pi) / omega       
-        baseline = np.sqrt(us12**2+vs12**2)
-        if tintt == 'auto':
+            # Calculate tint using uv smearing limit
+            baseline = math.sqrt(u**2 + v**2)
             tint = period/(2*np.pi*fov*baseline)
 
-            # Have at least 10 points per orbit (for short baselines)        
+            # Have at least 10 points per orbit (for short baselines)
             if tint > period/36.:
                 tint = period/36.
-        else:
-            tint = tintt
-          
-        times[0] += tint
-        finaltimes.append(times[0])
-        
+
+            times[0] += tint
+            finaltimes.append(times[0])
+    else:
+        # Fixed integration time: timestamps are a plain arithmetic sequence,
+        # so there's no need to evaluate uv_at_time()/baseline at each step.
+        nsteps = int(np.ceil(timerange[1] / tintt))
+        finaltimes = list(tintt * np.arange(nsteps + 1))
+
     # Set integration times
     integrationtimes = np.zeros(len(finaltimes))
     for i in range(1,len(finaltimes)):
