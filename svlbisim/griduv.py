@@ -13,25 +13,20 @@ def gen_visgrid(obs, ncells, maxbl):
 
     nums = np.zeros((ncells, ncells))
 
-    for i in range(len(obs.data)):
-        ugrid = int(np.round(obs.data['u'][i] / maxbl * ncells/2)) + int(ncells/2)
-        vgrid = int(np.round(obs.data['v'][i] / maxbl * ncells/2)) + int(ncells/2)
-        if (ugrid > 0):
-           ugrid -= 1
-        if (vgrid > 0):
-           vgrid -= 1
-        visgrid[ugrid,vgrid] += obs.data['vis'][i]
-        qvisgrid[ugrid,vgrid] += obs.data['qvis'][i]
-        uvisgrid[ugrid,vgrid] += obs.data['uvis'][i]
-        vvisgrid[ugrid,vgrid] += obs.data['vvis'][i]
-        sigmagrid[ugrid,vgrid] += obs.data['sigma'][i]**2
-        nums[ugrid,vgrid]+=1.
-        
-    for ugrid in range(len(nums)):
-        for vgrid in range(len(nums[0])):
-            if (nums[ugrid, vgrid] == 0):
-                nums[ugrid, vgrid] = 1
-            sigmagrid[ugrid,vgrid] = np.sqrt(sigmagrid[ugrid,vgrid])/nums[ugrid,vgrid]
+    ugrid = np.round(obs.data['u'] / maxbl * ncells/2).astype(int) + int(ncells/2)
+    vgrid = np.round(obs.data['v'] / maxbl * ncells/2).astype(int) + int(ncells/2)
+    ugrid[ugrid > 0] -= 1
+    vgrid[vgrid > 0] -= 1
+
+    np.add.at(visgrid, (ugrid, vgrid), obs.data['vis'])
+    np.add.at(qvisgrid, (ugrid, vgrid), obs.data['qvis'])
+    np.add.at(uvisgrid, (ugrid, vgrid), obs.data['uvis'])
+    np.add.at(vvisgrid, (ugrid, vgrid), obs.data['vvis'])
+    np.add.at(sigmagrid, (ugrid, vgrid), obs.data['sigma']**2)
+    np.add.at(nums, (ugrid, vgrid), 1.)
+
+    nums[nums == 0] = 1
+    sigmagrid = np.sqrt(sigmagrid) / nums
 
     visgrid = visgrid/nums
     qvisgrid = qvisgrid/nums
@@ -56,13 +51,6 @@ def griduv(obs, out, ncells, fov):
     
     # Add visibility conjugates before gridding
     obs_preproc = obs.copy()
-    #obs_conj = []
-    #for i in range(len(obs.data)):
-    #    obs_conj.append(np.array((obs.data['time'][i], obs.data['tint'][i], 'SAT1', 'SAT2', 0.0, 0.0,
-    #            -obs.data['u'][i], -obs.data['v'][i],
-    #            np.conj(obs.data['vis'][i]), np.conj(obs.data['qvis'][i]), np.conj(obs.data['uvis'][i]), np.conj(obs.data['vvis'][i]), obs.data['sigma'][i], obs.data['qsigma'][i], obs.data['usigma'][i], obs.data['vsigma'][i]),
-    #            dtype=eh.DTPOL_STOKES))
-    #obs_preproc.data=rec.stack_arrays((obs.data, obs_conj), asrecarray=True, usemask=False)
     
     # Grid visibilities        
     visgrid, qvisgrid, uvisgrid, vvisgrid, sigmagrid, nums = gen_visgrid(obs_preproc, ncells, maxbl)
