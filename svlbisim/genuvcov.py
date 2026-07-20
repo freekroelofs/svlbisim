@@ -12,22 +12,21 @@ def calc_positions(radius, inc, pa, times, GM=3.986004418e14):
 
     return positions
 
-def uv_at_time(t, r1, r2, inc, pa, omega1, omega2, nu):
-    # Scalar equivalent of calc_positions() for a single time value
-    x01 = math.cos(t * omega1) * r1
-    y01 = math.sin(t * omega1) * r1
-    x1 = math.cos(pa) * x01 + math.sin(pa) * math.sin(inc) * y01
-    y1 = math.cos(inc) * y01
+def fringe_rate_at_time(t, r1, r2, inc, pa, omega1, omega2, nu):
+    # Baseline change
 
-    x02 = math.cos(t * omega2) * r2
-    y02 = math.sin(t * omega2) * r2
-    x2 = math.cos(pa) * x02 + math.sin(pa) * math.sin(inc) * y02
-    y2 = math.cos(inc) * y02
+    K = 1000. / (3e8/nu)
 
-    u = (x1 - x2) * 1000. / (3e8/nu)
-    v = (y1 - y2) * 1000. / (3e8/nu)
+    dx1 = omega1 * r1 * (-math.cos(pa) * math.sin(omega1 * t) + math.sin(pa) * math.sin(inc) * math.cos(omega1 * t))
+    dy1 = omega1 * r1 * math.cos(inc) * math.cos(omega1 * t)
 
-    return u, v
+    dx2 = omega2 * r2 * (-math.cos(pa) * math.sin(omega2 * t) + math.sin(pa) * math.sin(inc) * math.cos(omega2 * t))
+    dy2 = omega2 * r2 * math.cos(inc) * math.cos(omega2 * t)
+
+    du_dt = K * (dx1 - dx2)
+    dv_dt = K * (dy1 - dy2)
+
+    return math.sqrt(du_dt**2 + dv_dt**2)
 
 def mask_earthshadow(positions, radius_earth=6378.):
     # Take care of Earth's shadow being in the way: mask all positions where this is the case.
@@ -47,19 +46,17 @@ def calc_uv(r1, r2, inc, pa, timerange, nu, fov, tintt, GM=3.986004418e14, radiu
 
         omega1 = np.sqrt(GM / (1000. * r1)) / (1000. * r1)
         omega2 = np.sqrt(GM / (1000. * r2)) / (1000. * r2)
-        period = (2. * np.pi) / omega1
+        period_floor = (2. * np.pi) / max(omega1, omega2)
 
         # Calculate uv-coverage
         while times[0] < timerange[1]:
-            u, v = uv_at_time(times[0], r1, r2, inc, pa, omega1, omega2, nu)
-
             # Calculate tint using uv smearing limit
-            baseline = math.sqrt(u**2 + v**2)
-            tint = period/(2*np.pi*fov*baseline)
+            rate = fringe_rate_at_time(times[0], r1, r2, inc, pa, omega1, omega2, nu)
+            tint = 1. / (fov * rate)
 
-            # Have at least 10 points per orbit (for short baselines)
-            if tint > period/36.:
-                tint = period/36.
+            # Have at least 10 points per orbit (for the faster-orbiting satellite)
+            if tint > period_floor/36.:
+                tint = period_floor/36.
 
             times[0] += tint
             finaltimes.append(times[0])
