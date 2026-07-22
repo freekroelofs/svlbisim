@@ -4,6 +4,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import numpy.lib.recfunctions as rec
 
+def grid_index(coord, maxbl, ncells):
+    idx = np.round(coord / maxbl * ncells/2).astype(int) + int(ncells/2)
+    idx = np.where(idx > 0, idx - 1, idx)
+    return idx
+
 def gen_visgrid(obs, ncells, maxbl):
     visgrid = np.zeros((ncells, ncells), dtype='complex')
     qvisgrid = np.zeros((ncells, ncells), dtype='complex')
@@ -13,10 +18,8 @@ def gen_visgrid(obs, ncells, maxbl):
 
     nums = np.zeros((ncells, ncells))
 
-    ugrid = np.round(obs.data['u'] / maxbl * ncells/2).astype(int) + int(ncells/2)
-    vgrid = np.round(obs.data['v'] / maxbl * ncells/2).astype(int) + int(ncells/2)
-    ugrid[ugrid > 0] -= 1
-    vgrid[vgrid > 0] -= 1
+    ugrid = grid_index(obs.data['u'], maxbl, ncells)
+    vgrid = grid_index(obs.data['v'], maxbl, ncells)
 
     np.add.at(visgrid, (ugrid, vgrid), obs.data['vis'])
     np.add.at(qvisgrid, (ugrid, vgrid), obs.data['qvis'])
@@ -48,15 +51,12 @@ def griduv(obs, out, ncells, fov):
         print('Grid cell size too large, setting to uv-smearing limit')
         ncells = ncells_smearlimit
     print('Gridding visibilities in %s x %s grid'%(ncells, ncells))
-    
-    # Add visibility conjugates before gridding
-    obs_preproc = obs.copy()
-    
-    # Grid visibilities        
-    visgrid, qvisgrid, uvisgrid, vvisgrid, sigmagrid, nums = gen_visgrid(obs_preproc, ncells, maxbl)
+
+    # Grid visibilities
+    visgrid, qvisgrid, uvisgrid, vvisgrid, sigmagrid, nums = gen_visgrid(obs, ncells, maxbl)
 
     # Make observation object
-    obs_grid = obs_preproc.copy()
+    obs_grid = obs.copy()
     obs_grid.data = obs_grid.data[0]
 
     griddata = []
@@ -79,7 +79,7 @@ def griduv(obs, out, ncells, fov):
     obs_grid.data = np.delete(obs_grid.data, todel)
     obs_grid.save_uvfits(out + '_gridded.uvfits')
 
-    return obs_grid
+    return obs_grid, visgrid, qvisgrid, uvisgrid, vvisgrid, nums, maxbl, ncells
 
 def calc_fft(obs_grid, out, ncells, fov):
     im = obs_grid.dirtyimage(ncells,fov)
@@ -87,53 +87,39 @@ def calc_fft(obs_grid, out, ncells, fov):
 
     return im
 
-def calc_fft_old(obs, out, ncells):
+def calc_fft_from_grid(obs_grid, visgrid, qvisgrid, uvisgrid, vvisgrid, nums, maxbl, ncells, out):
+    # Direct FFT of the already-gridded visibilities
+    centers = np.arange(ncells) * (maxbl*2/ncells) - maxbl
+    mirror_idx = grid_index(-centers, maxbl, ncells)
 
-    maxbl = np.max(np.sqrt(obs.data['u']**2+obs.data['v']**2))
+    def hermitian_symmetrize(grid):
+        mirror_grid = np.conj(grid[np.ix_(mirror_idx, mirror_idx)])
+        mirror_nums = nums[np.ix_(mirror_idx, mirror_idx)]
+        total_nums = nums + mirror_nums
+        total_nums = np.where(total_nums == 0, 1, total_nums)
+        return (nums*grid + mirror_nums*mirror_grid) / total_nums
 
-    
-    # FFT image: need to add visibility conjugates before gridding
-    obs_preproc = obs.copy()
-    obs_conj = []
-    for i in range(len(obs.data)):
-        obs_conj.append(np.array((obs.data['time'][i], obs.data['tint'][i], 'SAT1', 'SAT2', 0.0, 0.0,
-                -obs.data['u'][i], -obs.data['v'][i],
-                np.conj(obs.data['vis'][i]),  np.conj(obs.data['qvis'][i]),  np.conj(obs.data['uvis'][i]),  np.conj(obs.data['vvis'][i]), obs.data['qsigma'][i], obs.data['usigma'][i], obs.data['vsigma'][i], obs.data['sigma'][i]),
-                dtype=eh.DTPOL_STOKES))
-    obs_preproc.data=rec.stack_arrays((obs.data, obs_conj), asrecarray=True, usemask=False)
-    
-    visgrid, qvisgrid, uvisgrid, vvisgrid, sigmagrid, nums = gen_visgrid(obs_preproc, ncells, maxbl)
+    visgrid_herm = hermitian_symmetrize(visgrid)
+    qvisgrid_herm = hermitian_symmetrize(qvisgrid)
+    uvisgrid_herm = hermitian_symmetrize(uvisgrid)
+    vvisgrid_herm = hermitian_symmetrize(vvisgrid)
 
+    dc_idx = int(grid_index(np.array([0.]), maxbl, ncells)[0])
 
-    # Make image and rotate/flip
-    fft=np.abs(np.fft.fftshift(np.fft.ifft2(visgrid)))
-    qfft=np.abs(np.fft.fftshift(np.fft.ifft2(qvisgrid)))
-    ufft=np.abs(np.fft.fftshift(np.fft.ifft2(uvisgrid)))
-    vfft=np.abs(np.fft.fftshift(np.fft.ifft2(vvisgrid)))
+    def dc_to_origin(grid):
+        return np.roll(grid, -dc_idx, axis=(0, 1))
+
+    fft=np.fft.fftshift(np.fft.ifft2(dc_to_origin(visgrid_herm))).real
+    qfft=np.fft.fftshift(np.fft.ifft2(dc_to_origin(qvisgrid_herm))).real
+    ufft=np.fft.fftshift(np.fft.ifft2(dc_to_origin(uvisgrid_herm))).real
+    vfft=np.fft.fftshift(np.fft.ifft2(dc_to_origin(vvisgrid_herm))).real
     fov = 1 / (maxbl*2/ncells)
-    im = eh.image.make_square(obs_preproc, ncells, fov)
+    im = eh.image.make_square(obs_grid, ncells, fov)
     im.imvec = fft.flatten()
     im.qvec = qfft.flatten()
     im.uvec = ufft.flatten()
     im.vvec = vfft.flatten()
-    im = im.rotate(np.pi/2)
-    img = im.imvec.reshape((im.ydim, im.xdim))
-    qimg = im.qvec.reshape((im.ydim, im.xdim))
-    uimg = im.uvec.reshape((im.ydim, im.xdim))
-    vimg = im.vvec.reshape((im.ydim, im.xdim))
-    img = np.flip(img,0)
-    img = img.reshape(im.ydim**2)
-    qimg = np.flip(qimg,0)
-    qimg = qimg.reshape(im.ydim**2)
-    uimg = np.flip(uimg,0)
-    uimg = uimg.reshape(im.ydim**2)
-    vimg = np.flip(vimg,0)
-    vimg = vimg.reshape(im.ydim**2)
-    im.imvec = img
-    im.qvec = qimg
-    im.uvec = uimg
-    im.vvec = vimg
-    im.save_fits(out + '_fft-old.fits')
+    im.save_fits(out + '_fft-from_grid.fits')
 
     return im
 
@@ -144,19 +130,29 @@ def main(params):
     out = params['outdir'] + '/' + params['outtag']
     fov = float(params['fov'])*eh.RADPERUAS
     ncells = int(params['ncells'])
-    obs_grid = griduv(obs, out, ncells, fov)
-    #im_fft = calc_fft(obs, out, ncells)
-    im_fft = calc_fft(obs_grid, out, ncells, fov)
-    im_fft = calc_fft_old(obs_grid, out, ncells)
+    obs_grid, visgrid, qvisgrid, uvisgrid, vvisgrid, nums, maxbl, ncells = griduv(obs, out, ncells, fov)
+
+    # Match calc_fft()'s output image to the input model's field of view/pixel size
+    modelfile = params['image_path']
+    if modelfile.split('.')[-1] == 'fits':
+        model = eh.image.load_fits(modelfile)
+    elif modelfile.split('.')[-1] == 'h5' or modelfile.split('.')[-1] == 'hdf5':
+        model = eh.movie.load_hdf5(modelfile)
+    else:
+        raise ValueError('Use a fits or hdf5 file for the input model.')
+    ncells_out = model.xdim
+    fov_out = model.xdim * model.psize
+
+    im_fft = calc_fft(obs_grid, out, ncells_out, fov_out)
+    im_fft_from_grid = calc_fft_from_grid(obs_grid, visgrid, qvisgrid, uvisgrid, vvisgrid, nums, maxbl, ncells, out)
 
     # Deblur FFT for SGRA
     if params['source'] == 'SGRA':
         sm = so.ScatteringModel()
         obs_deblur = sm.Deblur_obs(obs_grid)
         out_deblur = params['outdir'] + '/' + params['outtag'] + '_deblur'
-        
-        #im_fft_deblur = calc_fft(obs_deblur, out_deblur, ncells)
-        im_fft_deblur = calc_fft(obs_deblur, out_deblur, ncells, fov)
+
+        im_fft_deblur = calc_fft(obs_deblur, out_deblur, ncells_out, fov_out)
 
     return 0
 
