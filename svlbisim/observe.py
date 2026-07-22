@@ -3,15 +3,18 @@ import ehtim.scattering.stochastic_optics as so
 import numpy as np
 import os
 import numpy.lib.recfunctions as rec
+from astropy import constants as const
 
-def observe(modelfile, modeltype, uvfile, Tsys, D, eta, eta_q, bw, out, scatter=False, kb=1.38064852e-23):
+KB = const.k_B.si.value
+
+def observe(modelfile, modeltype, uvfile, Tsys, D, eta, eta_q, bw, out, scatter=False):
 
     # Prepare uv data and image or movie
     uvdata = eh.obsdata.load_uvfits(uvfile)
-    
+
     # Calculate system noise
     A = eta * np.pi*(0.5*D)**2 # Antenna effective area
-    SEFD = (2*kb*Tsys/A)*1e26
+    SEFD = (2*KB*Tsys/A)*1e26
     sigma_const = SEFD/(eta_q*np.sqrt(2*bw))
 
     # Calculate and add sigmas to observation object

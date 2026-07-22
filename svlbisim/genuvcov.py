@@ -3,9 +3,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import math
+from astropy import constants as const
+from astropy import units as u
 
-def calc_positions(radius, inc, pa, times, GM=3.986004418e14):
-    omega = np.sqrt(GM / (1000. * radius)) / (1000. * radius)
+C = const.c.si.value
+GM_EARTH = const.GM_earth.si.value
+R_EARTH = const.R_earth.to(u.km).value
+
+def calc_positions(radius, inc, pa, times):
+    omega = np.sqrt(GM_EARTH / (1000. * radius)) / (1000. * radius)
     positions = np.array([np.cos(times * omega) * radius, np.sin(times * omega) * radius, np.zeros(len(times))])
     temp = np.array([positions[0], np.cos(inc) * positions[1] - np.sin(inc) * positions[2], np.cos(inc) * positions[2] + np.sin(inc) * positions[1]])
     positions = np.array([np.cos(pa) * temp[0] + np.sin(pa) * temp[2], temp[1], np.cos(pa) * temp[2] - np.sin(pa) * temp[0]])
@@ -15,7 +21,7 @@ def calc_positions(radius, inc, pa, times, GM=3.986004418e14):
 def fringe_rate_at_time(t, r1, r2, inc, pa, omega1, omega2, nu):
     # Baseline change
 
-    K = 1000. / (3e8/nu)
+    K = 1000. / (C/nu)
 
     dx1 = omega1 * r1 * (-math.cos(pa) * math.sin(omega1 * t) + math.sin(pa) * math.sin(inc) * math.cos(omega1 * t))
     dy1 = omega1 * r1 * math.cos(inc) * math.cos(omega1 * t)
@@ -28,24 +34,24 @@ def fringe_rate_at_time(t, r1, r2, inc, pa, omega1, omega2, nu):
 
     return math.sqrt(du_dt**2 + dv_dt**2)
 
-def mask_earthshadow(positions, radius_earth=6378.):
+def mask_earthshadow(positions):
     # Take care of Earth's shadow being in the way: mask all positions where this is the case.
-    # Condition: if z < 0 and sqrt(x^2 + y^2) is smaller than radius_earth.
-    mask_1 = np.sqrt(positions[0]**2. + positions[1]**2.) < radius_earth
+    # Condition: if z < 0 and sqrt(x^2 + y^2) is smaller than R_EARTH.
+    mask_1 = np.sqrt(positions[0]**2. + positions[1]**2.) < R_EARTH
     mask_2 = positions[2] < 0.
     mask = ~(mask_1 * mask_2)
 
     return mask
 
-def calc_uv(r1, r2, inc, pa, timerange, nu, fov, tintt, GM=3.986004418e14, radius_earth=6378.):
+def calc_uv(r1, r2, inc, pa, timerange, nu, fov, tintt):
     
     # Find timestamps using uv-smearing limit
     if tintt == 'auto':
         times = np.array([0.])
         finaltimes = [0.]
 
-        omega1 = np.sqrt(GM / (1000. * r1)) / (1000. * r1)
-        omega2 = np.sqrt(GM / (1000. * r2)) / (1000. * r2)
+        omega1 = np.sqrt(GM_EARTH / (1000. * r1)) / (1000. * r1)
+        omega2 = np.sqrt(GM_EARTH / (1000. * r2)) / (1000. * r2)
         period_floor = (2. * np.pi) / max(omega1, omega2)
 
         # Calculate uv-coverage
@@ -86,7 +92,7 @@ def calc_uv(r1, r2, inc, pa, timerange, nu, fov, tintt, GM=3.986004418e14, radiu
     integrationtimes12 = integrationtimes[mask12]
     
     # Mask out ISL occlusion
-    rcrit = np.sqrt(r1**2. - radius_earth**2.) + np.sqrt(r2**2. - radius_earth**2.)
+    rcrit = np.sqrt(r1**2. - R_EARTH**2.) + np.sqrt(r2**2. - R_EARTH**2.)
     mask12 = np.sqrt((positions12[0] - positions21[0])**2. + (positions12[1] - positions21[1])**2. + (positions12[2] - positions21[2])**2.) < rcrit
     positions12 = np.array([positions12[0][mask12], positions12[1][mask12], positions12[2][mask12]])
     positions21 = np.array([positions21[0][mask12], positions21[1][mask12], positions21[2][mask12]])
@@ -94,8 +100,8 @@ def calc_uv(r1, r2, inc, pa, timerange, nu, fov, tintt, GM=3.986004418e14, radiu
     integrationtimes12 = integrationtimes12[mask12]
 
     # Calculate final uv coordinates
-    us12 = (positions12[0] - positions21[0]) * 1000. / (3e8/nu)
-    vs12 = (positions12[1] - positions21[1]) * 1000. / (3e8/nu)
+    us12 = (positions12[0] - positions21[0]) * 1000. / (C/nu)
+    vs12 = (positions12[1] - positions21[1]) * 1000. / (C/nu)
 
     uvdata = np.array([us12, vs12, times12, integrationtimes12])
     
