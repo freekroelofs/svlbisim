@@ -254,7 +254,7 @@ def main(params):
         if np.any(model.qvec):
             plot_im_pol(fftim, out+ '_fft_pol.pdf')
 
-        if params['source'] == 'SGRA':
+        if params['deblur'] == 'True':
             fftimfile = params['outdir'] + '/' + params['outtag'] + '_deblur_fft.fits'
             fftim = eh.image.load_fits(fftimfile)
             out = params['outdir'] + '/' + params['outtag'] + '_deblur'

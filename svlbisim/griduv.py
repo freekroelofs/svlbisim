@@ -146,8 +146,8 @@ def main(params):
     im_fft = calc_fft(obs_grid, out, ncells_out, fov_out)
     im_fft_from_grid = calc_fft_from_grid(obs_grid, visgrid, qvisgrid, uvisgrid, vvisgrid, nums, maxbl, ncells, out)
 
-    # Deblur FFT for SGRA
-    if params['source'] == 'SGRA':
+    # Deblur FFT
+    if params['deblur'] == 'True':
         sm = so.ScatteringModel()
         obs_deblur = sm.Deblur_obs(obs_grid)
         out_deblur = params['outdir'] + '/' + params['outtag'] + '_deblur'

@@ -30,6 +30,10 @@ nu: 22227937500.
 # Field of view (uas; for uv-smearing limit)
 fov: 1000.
 
+# Set to 'True' to scatter the model image/movie (ehtim's default scattering
+# kernel, calibrated for SgrA*) before generating visibilities
+scatter: 'False'
+
 ##########################################
 # Orbit parameters
 ##########################################
@@ -92,4 +96,7 @@ make_plots: 'True'
 
 # Set to 'True' to run a basic image reconstruction with ehtim
 make_image: 'True'
+
+# Set to 'True' to deblur the gridded FFT image with ehtim's scattering model
+deblur: 'False'
 

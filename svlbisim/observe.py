@@ -1,9 +1,10 @@
 import ehtim as eh
+import ehtim.scattering.stochastic_optics as so
 import numpy as np
 import os
 import numpy.lib.recfunctions as rec
 
-def observe(modelfile, modeltype, uvfile, Tsys, D, eta, eta_q, bw, out, kb=1.38064852e-23):
+def observe(modelfile, modeltype, uvfile, Tsys, D, eta, eta_q, bw, out, scatter=False, kb=1.38064852e-23):
 
     # Prepare uv data and image or movie
     uvdata = eh.obsdata.load_uvfits(uvfile)
@@ -26,13 +27,21 @@ def observe(modelfile, modeltype, uvfile, Tsys, D, eta, eta_q, bw, out, kb=1.380
         im.ra = uvdata.ra
         im.dec= uvdata.dec
         im.rf = uvdata.rf
+        if scatter:
+            if im.xdim % 2 == 0:
+                print('Warning: scattering requires an odd image dimension; results may be inaccurate.')
+            im = so.ScatteringModel().Scatter(im)
         obs = im.observe_same(uvdata, ttype='fast')
-        
+
     elif modeltype == 'movie':
         mov = eh.movie.load_hdf5(modelfile)
         mov.ra = uvdata.ra
         mov.dec= uvdata.dec
-        mov.rf = uvdata.rf        
+        mov.rf = uvdata.rf
+        if scatter:
+            if mov.xdim % 2 == 0:
+                print('Warning: scattering requires an odd image dimension; results may be inaccurate.')
+            mov = so.ScatteringModel().Scatter_Movie(mov)
         # Need to make sure we have at least 1 timestamp with 2 datapoints to avoid dtype issues with obs.tlist()
         extrapoint = [np.array(uvdata.data[-1], dtype=eh.DTPOL_STOKES)]
         uvdata.data=rec.stack_arrays((uvdata.data, extrapoint), asrecarray=True, usemask=False)
@@ -62,8 +71,9 @@ def main(params):
     Tsys = params['tsys']
     D = params['diameter']
     eta_q = params['eta_q']
+    scatter = params['scatter'] == 'True'
 
-    obs = observe(modelfile, modeltype, uvfile, Tsys, D, eta, eta_q, bw, out)
+    obs = observe(modelfile, modeltype, uvfile, Tsys, D, eta, eta_q, bw, out, scatter=scatter)
 
     return obs
 
